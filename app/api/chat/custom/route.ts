@@ -5,6 +5,7 @@ import { OpenAIStream, StreamingTextResponse } from "ai"
 import { ServerRuntime } from "next"
 import OpenAI from "openai"
 import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions.mjs"
+import { callLLM } from "@/utils/llm";  // ou: "../utils/llm" se você criou em lib/utils
 
 export const runtime: ServerRuntime = "edge"
 
@@ -16,11 +17,23 @@ export async function POST(request: Request) {
     customModelId: string
   }
 
-  try {
-    const supabaseAdmin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+try {
+  // lê o modelo e mensagens do body
+  const { messages, customModelId } = await request.json();
+
+  // chama sua função genérica que roteia para o LLM correto
+  const result = await callLLM(customModelId, messages);
+
+  // retorna JSON simples (150ms–500ms)
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+} catch (error: any) {
+  const message = error.message || "Erro interno";
+  const code = error.status || 500;
+  return new Response(JSON.stringify({ error: message }), { status: code });
+}
 
     const { data: customModel, error } = await supabaseAdmin
       .from("models")
