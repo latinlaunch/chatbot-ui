@@ -13,7 +13,7 @@ export async function callLLM(model: string, messages: any[]) {
         body: JSON.stringify({ model, messages }),
       }).then(r => r.json());
 
-    // Anthropic Claude
+    // Anthropic
     case 'claude-sonnet':
     case 'claude-opus':
       return fetch('https://api.anthropic.com/v1/messages', {
@@ -85,7 +85,7 @@ export async function callLLM(model: string, messages: any[]) {
         body: JSON.stringify({ model, messages }),
       }).then(r => r.json());
 
-    // Leonardo (imagens)
+    // Leonardo (image)
     case 'leonardo-phoenix':
       return fetch(
         'https://cloud.leonardo.ai/api/rest/v1/generations/text-to-image',
