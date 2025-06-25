@@ -1,79 +1,14 @@
-import { Database } from "@/supabase/types"
-import { ChatSettings } from "@/types"
-import { createClient } from "@supabase/supabase-js"
-import { OpenAIStream, StreamingTextResponse } from "ai"
-import { ServerRuntime } from "next"
-import OpenAI from "openai"
-import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions.mjs"
-import { callLLM } from "@/utils/llm";  // ou: "../utils/llm" se você criou em lib/utils
+import { NextResponse } from 'next/server'
+import { callLLM } from '@/utils/llm'
 
-export const runtime: ServerRuntime = "edge"
+export const runtime = 'edge'
 
 export async function POST(request: Request) {
-  const json = await request.json()
-  const { chatSettings, messages, customModelId } = json as {
-    chatSettings: ChatSettings
-    messages: any[]
-    customModelId: string
-  }
-
-try {
-  // lê o modelo e mensagens do body
-  const { messages, customModelId } = await request.json();
-
-  // chama sua função genérica que roteia para o LLM correto
-  const result = await callLLM(customModelId, messages);
-
-  // retorna JSON simples (150ms–500ms)
-  return new Response(JSON.stringify(result), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-} catch (error: any) {
-  const message = error.message || "Erro interno";
-  const code = error.status || 500;
-  return new Response(JSON.stringify({ error: message }), { status: code });
-}
-
-    const { data: customModel, error } = await supabaseAdmin
-      .from("models")
-      .select("*")
-      .eq("id", customModelId)
-      .single()
-
-    if (!customModel) {
-      throw new Error(error.message)
-    }
-
-    const custom = new OpenAI({
-      apiKey: customModel.api_key || "",
-      baseURL: customModel.base_url
-    })
-
-    const response = await custom.chat.completions.create({
-      model: chatSettings.model as ChatCompletionCreateParamsBase["model"],
-      messages: messages as ChatCompletionCreateParamsBase["messages"],
-      temperature: chatSettings.temperature,
-      stream: true
-    })
-
-    const stream = OpenAIStream(response)
-
-    return new StreamingTextResponse(stream)
-  } catch (error: any) {
-    let errorMessage = error.message || "An unexpected error occurred"
-    const errorCode = error.status || 500
-
-    if (errorMessage.toLowerCase().includes("api key not found")) {
-      errorMessage =
-        "Custom API Key not found. Please set it in your profile settings."
-    } else if (errorMessage.toLowerCase().includes("incorrect api key")) {
-      errorMessage =
-        "Custom API Key is incorrect. Please fix it in your profile settings."
-    }
-
-    return new Response(JSON.stringify({ message: errorMessage }), {
-      status: errorCode
-    })
+  try {
+    const { messages, model } = await request.json()
+    const result = await callLLM(model, messages)
+    return NextResponse.json(result)
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
